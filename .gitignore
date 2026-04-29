@@ -1,0 +1,42 @@
+# === PRIVATE DATA — NEVER PUBLISH ===
+syndicate_train.jsonl
+*.jsonl
+
+# Local model weights & checkpoints
+models/
+checkpoints/
+*.bin
+*.safetensors
+*.gguf
+*.ggml
+*.pt
+*.pth
+*.ckpt
+
+# Training outputs
+output/
+runs/
+logs/
+wandb/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
