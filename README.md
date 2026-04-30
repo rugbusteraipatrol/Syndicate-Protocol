@@ -3,7 +3,7 @@
 > **Real-time Solana smart contract analysis powered by fine-tuned large language models.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Dataset](https://img.shields.io/badge/Dataset-2%2C900%2B%20Records-blue)]()
+[![Dataset](https://img.shields.io/badge/Dataset-4%2C500%2B%20Records-blue)]()
 [![Model](https://img.shields.io/badge/Model-Qwen2.5%20Coder%2014B-purple)]()
 [![Chain](https://img.shields.io/badge/Chain-Solana-green)]()
 
@@ -19,7 +19,7 @@ Syndicate Protocol is an AI-native fraud detection system built specifically for
 
 | Metric | Value |
 |---|---|
-| **Verified Records** | 2,900+ |
+| **Verified Records** | 4,500+ |
 | **Source** | Live Solana mainnet (PumpPortal stream) |
 | **Format** | Instruction-tuned JSONL |
 | **Schema** | `instruction` / `input` (raw program data) / `output` (structured analysis) |
