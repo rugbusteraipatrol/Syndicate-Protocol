@@ -1,44 +1,66 @@
-# 🛡️ The Syndicate Protocol: AI-Native Fraud Detection
+# 🛡️ Syndicate Protocol: AI-Native Fraud Detection
 
-> **Real-time Solana smart contract analysis powered by fine-tuned large language models.**
+> Real-time Solana token analysis powered by fine-tuned large language models.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Dataset](https://img.shields.io/badge/Dataset-4%2C500%2B%20Records-blue)]()
-[![Model](https://img.shields.io/badge/Model-Qwen2.5%20Coder%2014B-purple)]()
-[![Chain](https://img.shields.io/badge/Chain-Solana-green)]()
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Dataset](https://img.shields.io/badge/Dataset-150K%2B%20Records-blue)
+![Model](https://img.shields.io/badge/Model-Qwen3--14B-purple)
+![Chain](https://img.shields.io/badge/Chain-Solana-green)
 
 ---
 
 ## Overview
 
-Syndicate Protocol is an AI-native fraud detection system built specifically for the Solana blockchain. It monitors new token deployments in real time, extracts on-chain program data, and runs each contract through a fine-tuned code analysis model to surface rugpull mechanisms, unauthorized mint authorities, drain functions, and access control flaws — before retail investors are exposed.
+Syndicate Protocol is an AI-native fraud detection system built specifically for the Solana blockchain. It monitors new token deployments in real time, analyzes on-chain metadata and behavioral signals, and classifies each token as **DANGER**, **WARN**, or **GOOD** — before retail investors are exposed.
+
+Unlike existing tools that rely on static metadata checks, Syndicate Protocol combines:
+- **Live on-chain data** via PumpPortal WebSocket + Solana RPC
+- **RugCheck API** for verified ground-truth labels
+- **150,000+ labeled training records** including 4 years of historical Solana DeFi data
+- **Fine-tuned LLM** trained to recognize fraud patterns invisible to rule-based systems
 
 ---
 
 ## 📊 Dataset
 
 | Metric | Value |
-|---|---|
-| **Verified Records** | 4,500+ |
-| **Source** | Live Solana mainnet (PumpPortal stream) |
-| **Format** | Instruction-tuned JSONL |
-| **Schema** | `instruction` / `input` (raw program data) / `output` (structured analysis) |
-| **Collection method** | Continuous WebSocket ingestion + LM-assisted labeling |
+|--------|-------|
+| Total Records | 150,000+ |
+| Live Records (v2) | 30,000+ and growing |
+| Historical Records | 116,304 (SolRPDS 2021–2024) |
+| Source | PumpPortal stream + RugCheck API + SolRPDS academic dataset |
+| Format | Instruction-tuned JSONL |
+| Labels | DANGER / WARN / GOOD |
+| Collection | Continuous WebSocket ingestion + RugCheck API labeling |
 
-Each record is a `(program_bytecode, structured_analysis)` pair produced by the data collection pipeline and verified against known scam patterns.
+Each record contains structured token metadata (name, mint authority, freeze authority, liquidity signals, risk flags) paired with a verified risk classification.
+
+### Dataset Format
+
+```json
+{
+  "instruction": "Analyze this Solana token and classify its risk level as DANGER, WARN, or GOOD.",
+  "input": "Token: SNAKE EYE (SNAKE)\nMint Authority: NO - disabled\nFreeze Authority: NO - disabled\nRugCheck Score: 117601\nRisk Flags: Creator history of rugged tokens",
+  "output": "DANGER - High risk token. Risk flags: Creator history of rugged tokens. RugCheck score: 117601.",
+  "label": "DANGER"
+}
+```
+
+> ⚠️ Training datasets and model weights are excluded from this repository intentionally.
 
 ---
 
 ## 🧠 Model
 
-**Base:** [Qwen2.5-Coder-14B-Instruct](https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct)
+**Base:** Qwen3-14B  
+**Method:** QLoRA fine-tuning via Unsloth  
+**Training data:** 150,000+ verified Solana token records
 
-Fine-tuned on the Syndicate dataset to specialize in:
-- Rugpull mechanism identification
-- Hidden mint / freeze authority detection
-- Unauthorized fund drain patterns
-- Access control vulnerability classification
-- Risk scoring: `LOW` / `MEDIUM` / `HIGH`
+Fine-tuned to specialize in:
+- Rugpull mechanism identification (Freeze Authority Abuse, Liquidity Withdrawal, Pump-and-Dump)
+- Creator history pattern recognition
+- Holder concentration and liquidity risk analysis
+- Risk scoring: DANGER / WARN / GOOD
 
 ---
 
@@ -46,69 +68,59 @@ Fine-tuned on the Syndicate dataset to specialize in:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│              SYNDICATE PIPELINE                 │
+│              SYNDICATE PIPELINE v2              │
 │                                                 │
-│  PumpPortal WS  ──►  dataset_collector.py       │
+│  PumpPortal WS  ──►  dataset_collector_v2.py   │
 │  (new tokens)         │                         │
 │                       ▼                         │
 │              Solana RPC (mainnet)               │
-│              program data fetch                 │
+│              token metadata fetch               │
 │                       │                         │
 │                       ▼                         │
-│           LM Studio — Qwen2.5-Coder-14B        │
-│           (local GPU inference)                 │
+│           RugCheck API                          │
+│           (verified risk labels)                │
 │                       │                         │
 │                       ▼                         │
-│           syndicate_train.jsonl                 │
+│           syndicate_train_v2.jsonl              │
 │           (private training dataset)            │
 └─────────────────────────────────────────────────┘
 ```
 
-**Hardware:**
-- Local GPU training — no cloud dependency
-- LM Studio for GPU-accelerated local inference (AMD GPU)
-- Solana public RPC with exponential backoff
-
-**Why local?**
-- Training data stays private
-- No API rate limits or costs
-- Full control over fine-tuning hyperparameters
+**Why this approach?**
+- RugCheck API provides verified, ground-truth labels — not LLM-generated guesses
+- Structured token metadata is interpretable and trainable
+- Pipeline runs 24/7, continuously growing the dataset
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
 ```bash
 pip install websockets requests
 ```
 
-- [LM Studio](https://lmstudio.ai) with `Qwen2.5-Coder-14B-Instruct` loaded
-- LM Studio Local Server running on `http://localhost:1234`
-
-### 2. Start Data Collection
+### Start Data Collection
 
 ```bash
-python dataset_collector.py
+python dataset_collector_v2.py
 ```
 
 The collector will:
 1. Connect to PumpPortal WebSocket
 2. Subscribe to new token events
-3. Fetch program data via Solana RPC
-4. Analyze each contract with the local LLM
-5. Append results to `syndicate_train.jsonl`
+3. Fetch token metadata via Solana RPC
+4. Classify each token via RugCheck API
+5. Append labeled records to `syndicate_train_v2.jsonl`
 
-### 3. Dataset Format
+### Analyze Your Dataset
 
-```json
-{
-  "instruction": "Analiziraj Rust kod Solana pametnog ugovora na sumnjive obrasce i prevare.",
-  "input": "<raw program data / hex bytecode>",
-  "output": "1. Rugpull mehanizmi: ...\n2. Sumnjive funkcije: ...\n3. Kontrola pristupa: ...\n4. Procjena rizika: VISOK"
-}
+```bash
+python analyze_dataset.py
 ```
+
+Shows label distribution, top risk flags, RugCheck score statistics, and fine-tuning readiness assessment.
 
 ---
 
@@ -116,28 +128,29 @@ The collector will:
 
 ```
 syndicate_core/
-├── dataset_collector.py   # Real-time data collection pipeline
-├── .gitignore             # Excludes private dataset & model weights
-├── LICENSE                # MIT
+├── dataset_collector_v2.py   # Live data collection pipeline
+├── analyze_dataset.py        # Dataset quality analysis
+├── convert_solrpds.py        # SolRPDS academic dataset converter
+├── .gitignore
+├── LICENSE
 └── README.md
 ```
-
-> ⚠️ `syndicate_train.jsonl` and all model weights are excluded from this repository intentionally.
 
 ---
 
 ## 🗺️ Roadmap
 
 - [x] Real-time WebSocket ingestion pipeline
-- [x] LM Studio / local GPU inference integration
-- [x] 2,900+ record dataset milestone
-- [ ] Fine-tuning script (LoRA / QLoRA on Qwen2.5-14B)
+- [x] RugCheck API integration for verified labeling
+- [x] 30,000+ live record dataset milestone
+- [x] SolRPDS academic dataset integration (116K historical records)
+- [ ] Fine-tuning script (QLoRA on Qwen3-14B via Unsloth)
 - [ ] Evaluation harness (precision / recall on known scams)
 - [ ] REST API wrapper for real-time scoring
-- [ ] Explorer integration
+- [ ] Web dashboard for live token monitoring
 
 ---
 
 ## License
 
-[MIT](LICENSE) — open source, use freely, attribution appreciated.
+MIT — open source, use freely, attribution appreciated.
