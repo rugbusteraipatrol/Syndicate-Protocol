@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Syndicate Protocol — Portfolio Scan</title>
+  <style>
+    :root {
+      --bg:          #0a0a0f;
+      --surface:     #111118;
+      --border:      #1e1e2e;
+      --accent:      #7c3aed;
+      --accent-glow: rgba(124,58,237,0.25);
+      --text:        #e2e8f0;
+      --muted:       #64748b;
+      --danger:      #ef4444;
+      --danger-bg:   rgba(239,68,68,0.10);
+      --danger-border:rgba(239,68,68,0.40);
+      --warn:        #f59e0b;
+      --warn-bg:     rgba(245,158,11,0.10);
+      --warn-border: rgba(245,158,11,0.40);
+      --good:        #22c55e;
+      --good-bg:     rgba(34,197,94,0.08);
+      --good-border: rgba(34,197,94,0.30);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: #a78bfa;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── CONNECT BUTTON ── */
+    #connectBtn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    #connectBtn:hover { filter: brightness(1.15); }
+    #connectBtn:disabled { opacity: 0.5; cursor: default; filter: none; }
+
+    .wallet-address {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-family: monospace;
+      background: var(--border);
+      padding: 6px 14px;
+      border-radius: 8px;
+    }
+
+    /* ── MAIN ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .section-sub {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 28px;
+    }
+
+    /* ── SCAN BUTTON ── */
+    #scanBtn {
+      display: none;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      margin-bottom: 32px;
+      transition: all 0.2s;
+      box-shadow: 0 0 30px var(--accent-glow);
+    }
+    #scanBtn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    #scanBtn:disabled { opacity: 0.5; cursor: default; transform: none; filter: none; }
+
+    /* ── STATS BAR ── */
+    #statsBar {
+      display: none;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-card .stat-num {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .stat-card .stat-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
+    }
+    .stat-card.danger .stat-num { color: var(--danger); }
+    .stat-card.warn   .stat-num { color: var(--warn); }
+    .stat-card.good   .stat-num { color: var(--good); }
+
+    /* ── TOKEN LIST ── */
+    #tokenList {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .token-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 90px 90px;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Risk flash animation */
+    @keyframes flashDanger {
+      0%,100% { background: var(--danger-bg); }
+      50%      { background: rgba(239,68,68,0.20); }
+    }
+
+    .token-row.DANGER {
+      border-color: var(--danger-border);
+      background: var(--danger-bg);
+      animation: flashDanger 2s ease-in-out 1;
+    }
+    .token-row.WARN {
+      border-color: var(--warn-border);
+      background: var(--warn-bg);
+    }
+    .token-row.GOOD {
+      border-color: var(--good-border);
+      background: var(--good-bg);
+    }
+
+    /* Pulsing left bar for DANGER */
+    .token-row.DANGER::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--danger);
+      box-shadow: 0 0 10px var(--danger);
+    }
+
+    .token-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .token-info { min-width: 0; }
+    .token-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .token-mint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .token-amount {
+      text-align: right;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .risk-score {
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      min-width: 80px;
+    }
+    .risk-badge.DANGER { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid var(--danger-border); }
+    .risk-badge.WARN   { background: rgba(245,158,11,0.15); color: var(--warn);   border: 1px solid var(--warn-border); }
+    .risk-badge.GOOD   { background: rgba(34,197,94,0.12);  color: var(--good);   border: 1px solid var(--good-border); }
+    .risk-badge.scanning {
+      background: rgba(124,58,237,0.1);
+      color: #a78bfa;
+      border: 1px solid rgba(124,58,237,0.3);
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    /* ── EMPTY / ERROR STATES ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ── PROGRESS BAR ── */
+    #progressWrap {
+      display: none;
+      margin-bottom: 20px;
+    }
+    #progressBar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #progressFill {
+      height: 100%;
+      background: linear-gradient(90deg, #7c3aed, #06b6d4);
+      width: 0%;
+      transition: width 0.4s ease;
+      border-radius: 2px;
+    }
+    #progressLabel {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── PHANTOM NOT FOUND ── */
+    #phantomAlert {
+      display: none;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid var(--danger-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: 0.88rem;
+      color: var(--danger);
+    }
+    #phantomAlert a { color: #f87171; }
+
+    /* header disclaimer */
+    .disclaimer {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🛡️</div>
+    <span>Syndicate Protocol</span>
+    <span class="badge">AI Risk Engine</span>
+  </div>
+  <div id="walletSection">
+    <button id="connectBtn" onclick="connectWallet()">🔗 Connect Wallet</button>
+  </div>
+</header>
+
+<!-- ══════════ MAIN ══════════ -->
+<main>
+  <div id="phantomAlert">
+    ⚠️ Phantom Wallet nije pronađen. <a href="https://phantom.app" target="_blank">Instaliraj ovdje</a> pa osvježi stranicu.
+  </div>
+
+  <div class="section-title">My Portfolio Scan</div>
+  <div class="section-sub">Svaki token u tvom wallets-u se skenira kroz Syndicate Risk Engine u realnom vremenu.</div>
+
+  <button id="scanBtn" onclick="startScan()">⚡ Skeniraj Portfolio</button>
+
+  <!-- Stats bar -->
+  <div id="statsBar" style="display:none; grid-template-columns: repeat(4,1fr); gap:12px; margin-bottom:28px;">
+    <div class="stat-card">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">Ukupno Tokena</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="stat-num" id="statDanger">0</div>
+      <div class="stat-label">🔴 Danger</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="stat-num" id="statWarn">0</div>
+      <div class="stat-label">🟡 Warn</div>
+    </div>
+    <div class="stat-card good">
+      <div class="stat-num" id="statGood">0</div>
+      <div class="stat-label">🟢 Good</div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div id="progressWrap">
+    <div id="progressBar"><div id="progressFill"></div></div>
+    <div id="progressLabel">Pripremam sken...</div>
+  </div>
+
+  <!-- Token list -->
+  <div id="tokenList">
+    <div class="empty-state">
+      <div class="icon">🔗</div>
+      <p>Poveži wallet da počneš sken.</p>
+    </div>
+  </div>
+</main>
+
+<div class="disclaimer">
+  Syndicate Protocol — Risk scores se računaju putem RugCheck API-ja i AI Risk Engine-a. Nisu finansijski savjet.
+</div>
+
+<!-- ══════════ SCRIPT ══════════ -->
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────
+const SOLANA_RPC   = "https://api.mainnet-beta.solana.com";
+const RUGCHECK_API = "https://api.rugcheck.xyz/v1";
+const SCAN_CONCURRENCY = 3;   // koliko tokena se skenira paralelno
+
+// ─── State ────────────────────────────────────────────────────────────────
+let walletPubkey = null;
+let scanResults  = { DANGER: 0, WARN: 0, GOOD: 0, total: 0 };
+
+// ─── Wallet Connect ───────────────────────────────────────────────────────
+async function connectWallet() {
+  const btn = document.getElementById('connectBtn');
+
+  // Provjeri je li Phantom instaliran
+  if (!window.solana || !window.solana.isPhantom) {
+    document.getElementById('phantomAlert').style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Spajam...';
+
+  try {
+    const resp = await window.solana.connect();
+    walletPubkey = resp.publicKey.toString();
+
+    // Zamijeni dugme adresom
+    document.getElementById('walletSection').innerHTML = `
+      <span class="wallet-address">
+        🟢 ${walletPubkey.slice(0,4)}...${walletPubkey.slice(-4)}
+      </span>`;
+
+    document.getElementById('scanBtn').style.display = 'block';
+    document.getElementById('tokenList').innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚡</div>
+        <p>Wallet konektovan! Klikni "Skeniraj Portfolio" da počneš.</p>
+      </div>`;
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = '🔗 Connect Wallet';
+    console.error('Wallet connect error:', e);
+  }
+}
+
+// ─── Fetch SPL Token Accounts ─────────────────────────────────────────────
+async function getTokenAccounts(pubkey) {
+  const payload = {
+    jsonrpc: "2.0", id: 1,
+    method: "getTokenAccountsByOwner",
+    params: [
+      pubkey,
+      { programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
+      { encoding: "jsonParsed", commitment: "confirmed" }
+    ]
+  };
+
+  const resp = await fetch(SOLANA_RPC, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await resp.json();
+  if (!data.result?.value) return [];
+
+  return data.result.value
+    .map(acc => {
+      const info    = acc.account.data.parsed?.info;
+      const mint    = info?.mint;
+      const amount  = info?.tokenAmount?.uiAmountString || '0';
+      const decimals= info?.tokenAmount?.decimals || 0;
+      return { mint, amount, decimals };
+    })
+    .filter(t => t.mint && parseFloat(t.amount) > 0);
+}
+
+// ─── RugCheck Risk Score ───────────────────────────────────────────────────
+async function getRiskScore(mint) {
+  try {
+    const resp = await fetch(`${RUGCHECK_API}/tokens/${mint}/report/summary`, {
+      headers: { 'Accept': 'application/json' }
+    });
+
+    if (!resp.ok) return { label: 'WARN', score: null, flags: [] };
+
+    const data = await resp.json();
+    const score = data.score ?? data.score_normalised ?? null;
+    const risks = data.risks ?? [];
+    const flags = risks.map(r => r.name).filter(Boolean);
+
+    // Syndicate labeling logika (konzistentna s dataset_collector_v4)
+    let label;
+    if (score === null) {
+      label = 'WARN';
+    } else if (score >= 500) {
+      label = 'DANGER';
+    } else if (score >= 200) {
+      label = 'WARN';
+    } else {
+      label = 'GOOD';
+    }
+
+    // Override ako ima kritičnih flagova
+    const criticalFlags = ['Freeze Authority still enabled', 'Mint Authority still enabled', 'High holder concentration'];
+    if (flags.some(f => criticalFlags.some(cf => f.includes(cf)))) {
+      if (label === 'GOOD') label = 'WARN';
+    }
+
+    return { label, score, flags };
+  } catch (e) {
+    return { label: 'WARN', score: null, flags: ['API nedostupan'] };
+  }
+}
+
+// ─── Fetch Token Name ─────────────────────────────────────────────────────
+async function getTokenMeta(mint) {
+  try {
+    const resp = await fetch(`${RUGCHECK_API}/tokens/${mint}/report/summary`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.tokenMeta?.name || data.tokenMeta?.symbol || null;
+  } catch { return null; }
+}
+
+// ─── Render Token Row ─────────────────────────────────────────────────────
+function renderRow(token, status = 'scanning', riskData = null) {
+  const row = document.getElementById(`row-${token.mint}`);
+  if (!row) return;
+
+  const nameEl   = row.querySelector('.token-name');
+  const badgeEl  = row.querySelector('.risk-badge');
+  const scoreEl  = row.querySelector('.risk-score');
+  const flagsEl  = row.querySelector('.token-flags');
+
+  if (status === 'scanning') {
+    badgeEl.className  = 'risk-badge scanning';
+    badgeEl.textContent = '⏳ Sken...';
+    return;
+  }
+
+  const { label, score, flags } = riskData;
+
+  // Ažuriraj klasu reda
+  row.className = `token-row ${label}`;
+
+  // Badge
+  badgeEl.className  = `risk-badge ${label}`;
+  const emoji = label === 'DANGER' ? '🔴' : label === 'WARN' ? '🟡' : '🟢';
+  badgeEl.textContent = `${emoji} ${label}`;
+
+  // Score
+  scoreEl.textContent = score !== null ? `Score: ${score}` : '';
+
+  // Flags tooltip
+  if (flags.length > 0) {
+    flagsEl.textContent = flags.slice(0, 2).join(' • ');
+    flagsEl.style.color = label === 'DANGER' ? 'var(--danger)' : 'var(--warn)';
+  }
+
+  // Shake animacija za DANGER
+  if (label === 'DANGER') {
+    row.style.animation = 'flashDanger 1.5s ease-in-out 2';
+  }
+}
+
+// ─── Build Initial Row (loading state) ────────────────────────────────────
+function buildInitialRow(token) {
+  const short = `${token.mint.slice(0,5)}...${token.mint.slice(-5)}`;
+  const letter = (token.name || token.mint)[0].toUpperCase();
+
+  return `
+    <div class="token-row" id="row-${token.mint}">
+      <div class="token-icon">${letter}</div>
+      <div class="token-info">
+        <div class="token-name">${token.name || short}</div>
+        <div class="token-mint">${token.mint}</div>
+        <div class="token-flags" style="font-size:0.7rem;margin-top:3px;"></div>
+      </div>
+      <div class="token-amount">${parseFloat(token.amount).toLocaleString()}</div>
+      <div class="risk-score">—</div>
+      <div><span class="risk-badge scanning">⏳ Sken...</span></div>
+    </div>`;
+}
+
+// ─── Update Stats ─────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('statTotal').textContent  = scanResults.total;
+  document.getElementById('statDanger').textContent = scanResults.DANGER;
+  document.getElementById('statWarn').textContent   = scanResults.WARN;
+  document.getElementById('statGood').textContent   = scanResults.GOOD;
+}
+
+// ─── Main Scan ────────────────────────────────────────────────────────────
+async function startScan() {
+  if (!walletPubkey) return;
+
+  const scanBtn = document.getElementById('scanBtn');
+  scanBtn.disabled = true;
+  scanBtn.textContent = '⏳ Skeniranje u toku...';
+
+  // Reset stats
+  scanResults = { DANGER: 0, WARN: 0, GOOD: 0, total: 0 };
+  document.getElementById('statsBar').style.display = 'grid';
+  document.getElementById('progressWrap').style.display = 'block';
+
+  const tokenList = document.getElementById('tokenList');
+  tokenList.innerHTML = '';
+
+  try {
+    // 1. Dohvati tokene iz walleta
+    setProgress(0, 'Dohvatam token accounts...');
+    let tokens = await getTokenAccounts(walletPubkey);
+
+    if (tokens.length === 0) {
+      tokenList.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📭</div>
+          <p>Nema SPL tokena u ovom walletu.</p>
+        </div>`;
+      scanBtn.disabled = false;
+      scanBtn.textContent = '⚡ Skeniraj Portfolio';
+      document.getElementById('progressWrap').style.display = 'none';
+      return;
+    }
+
+    scanResults.total = tokens.length;
+    updateStats();
+
+    // 2. Renderiraj sve redove u loading stanju
+    tokenList.innerHTML = tokens.map(t => buildInitialRow(t)).join('');
+
+    // 3. Skeniraj u batchevima (SCAN_CONCURRENCY paralelno)
+    let done = 0;
+
+    for (let i = 0; i < tokens.length; i += SCAN_CONCURRENCY) {
+      const batch = tokens.slice(i, i + SCAN_CONCURRENCY);
+
+      await Promise.all(batch.map(async (token) => {
+        const riskData = await getRiskScore(token.mint);
+        renderRow(token, 'done', riskData);
+        scanResults[riskData.label]++;
+        done++;
+        updateStats();
+        setProgress(
+          Math.round((done / tokens.length) * 100),
+          `Skenirano ${done} / ${tokens.length} tokena...`
+        );
+      }));
+    }
+
+    // 4. Sortiraj listu: DANGER gore, zatim WARN, zatim GOOD
+    const order = { DANGER: 0, WARN: 1, GOOD: 2 };
+    const rows = [...tokenList.querySelectorAll('.token-row')];
+    rows.sort((a, b) => {
+      const la = [...a.classList].find(c => order[c] !== undefined) || 'WARN';
+      const lb = [...b.classList].find(c => order[c] !== undefined) || 'WARN';
+      return order[la] - order[lb];
+    });
+    rows.forEach(r => tokenList.appendChild(r));
+
+    setProgress(100, `✅ Sken završen — ${tokens.length} tokena analizirano.`);
+
+    setTimeout(() => {
+      document.getElementById('progressWrap').style.display = 'none';
+    }, 3000);
+
+  } catch (e) {
+    tokenList.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p>Greška pri skeniranju: ${e.message}</p>
+      </div>`;
+    console.error(e);
+  }
+
+  scanBtn.disabled  = false;
+  scanBtn.textContent = '🔄 Ponovo skenirati';
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressFill').style.width  = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+</script>
+
+</body>
+</html>
