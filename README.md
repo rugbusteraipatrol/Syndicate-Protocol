@@ -3,7 +3,7 @@
 > Real-time multi-chain token fraud detection powered by fine-tuned large language models.
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Dataset](https://img.shields.io/badge/Dataset-230K%2B%20Records-blue)
+![Dataset](https://img.shields.io/badge/Dataset-358K%2B%20Records-blue)
 ![Model](https://img.shields.io/badge/Model-Qwen3--14B-purple)
 ![Solana](https://img.shields.io/badge/Chain-Solana-green)
 ![Avax](https://img.shields.io/badge/Chain-Avalanche-red)
@@ -14,7 +14,8 @@
 
 Syndicate Protocol now has a live Solana intelligence pipeline behind the public wallet scanner.
 
-- **12,707 Solana scan records** collected in the live V6 pipeline.
+- **358K+ historical Solana scan records** across V1-V6 and academic evidence.
+- **12,707 Solana scan records** collected in the live V6 PostgreSQL pipeline.
 - Records are persisted as full JSON evidence payloads in PostgreSQL.
 - Portfolio Scan UI is live for Phantom wallets.
 - Duplicate mint records are skipped by database constraint.
@@ -32,7 +33,7 @@ Unlike existing tools that rely on static metadata checks, Syndicate Protocol co
 - **Live on-chain data** via PumpPortal WebSocket (Solana) + Avalanche RPC polling
 - **RugCheck API** for verified ground-truth labels (Solana)
 - **CIA Intelligence Engine V6** — 15+ behavioral analysis modules
-- **230,000+ labeled training records** across Solana and Avalanche
+- **358,000+ historical Solana scan records** across V1-V6 and academic evidence
 - **Fine-tuned LLM** (Qwen3-14B QLoRA) trained to recognize fraud patterns
 
 > 🚧 **Multi-chain expansion in progress** — Avalanche C-Chain live. Arbitrum and Lightchain coming soon.
@@ -51,7 +52,8 @@ Unlike existing tools that rely on static metadata checks, Syndicate Protocol co
 | Academic | 116,304 | Solana | SolRPDS 2021–2024 |
 | Avax Historical | 2,238 | Avalanche | SnowTrace + Avax RPC |
 | Avax Real-time | Growing | Avalanche | Avax RPC polling |
-| **Total** | **230,000+** | **Multi-chain** | |
+| **Solana Historical Corpus** | **358,000+** | **Solana** | V1-V6 + academic scan evidence |
+| **Total** | **358,000+** | **Multi-chain** | Historical Solana corpus plus live Avalanche expansion |
 
 ---
 
@@ -183,7 +185,7 @@ syndicate_core/
 - [x] Multi-chain: Avalanche C-Chain support
 - [x] V5: Jito bundles, name stylometry, CEX sweep tracking
 - [x] V6: Contract backdoor, holder concentration, rug velocity, serial rugger DB
-- [x] 230K+ record dataset milestone
+- [x] 358K+ historical Solana scan corpus milestone
 - [x] Telegram alerts ([@RugBusterAlerts](https://t.me/RugBusterAlerts))
 - [x] Portfolio scan — wallet connect + risk scoring
 - [x] Live Solana V6 collector persisted to PostgreSQL

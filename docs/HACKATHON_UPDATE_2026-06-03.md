@@ -7,6 +7,7 @@ Syndicate Protocol moved beyond a single-token demo scanner into a live Solana i
 - Added portfolio scan UI for Phantom wallets.
 - Continued operating the Solana V6 collector pipeline.
 - Stored live Solana scan records in PostgreSQL using full JSON evidence payloads.
+- Preserved the broader 358K+ historical Solana scan corpus across V1-V6 and academic evidence.
 - Preserved duplicate protection by mint/contract address.
 - Prepared the architecture for an API scoring layer while keeping the collector dataset private.
 
@@ -14,7 +15,8 @@ Syndicate Protocol moved beyond a single-token demo scanner into a live Solana i
 
 | Metric | Value |
 |---|---:|
-| Solana scan records collected | 12,707 |
+| Historical Solana scan corpus | 358K+ |
+| Live V6 PostgreSQL records | 12,707 |
 | Storage format | PostgreSQL JSONB |
 | Collector version | V6 |
 | Intelligence modules | CIA Core + V5 + V6 |
