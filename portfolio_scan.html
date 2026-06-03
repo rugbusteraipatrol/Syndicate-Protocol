@@ -116,6 +116,35 @@
       margin-bottom: 28px;
     }
 
+    .pipeline-status {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .pipeline-card {
+      border: 1px solid rgba(124,58,237,0.35);
+      background: rgba(124,58,237,0.08);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .pipeline-card strong {
+      display: block;
+      font-size: 1.15rem;
+      line-height: 1;
+      color: #a78bfa;
+      margin-bottom: 6px;
+    }
+
+    .pipeline-card span {
+      color: var(--muted);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
     /* ── SCAN BUTTON ── */
     #scanBtn {
       display: none;
@@ -340,6 +369,10 @@
       border-top: 1px solid var(--border);
       margin-top: 40px;
     }
+
+    @media (max-width: 720px) {
+      .pipeline-status { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -364,6 +397,25 @@
 
   <div class="section-title">My Portfolio Scan</div>
   <div class="section-sub">Svaki token u tvom wallets-u se skenira kroz Syndicate Risk Engine u realnom vremenu.</div>
+
+  <div class="pipeline-status">
+    <div class="pipeline-card">
+      <strong>12.7K+</strong>
+      <span>Solana scan records</span>
+    </div>
+    <div class="pipeline-card">
+      <strong>V6</strong>
+      <span>CIA behavior engine</span>
+    </div>
+    <div class="pipeline-card">
+      <strong>JSONB</strong>
+      <span>Full evidence storage</span>
+    </div>
+    <div class="pipeline-card">
+      <strong>API</strong>
+      <span>Scoring layer planned</span>
+    </div>
+  </div>
 
   <button id="scanBtn" onclick="startScan()">⚡ Skeniraj Portfolio</button>
 

@@ -10,6 +10,20 @@
 
 ---
 
+## Latest Hackathon Update - 2026-06-03
+
+Syndicate Protocol now has a live Solana intelligence pipeline behind the public wallet scanner.
+
+- **12,707 Solana scan records** collected in the live V6 pipeline.
+- Records are persisted as full JSON evidence payloads in PostgreSQL.
+- Portfolio Scan UI is live for Phantom wallets.
+- Duplicate mint records are skipped by database constraint.
+- API-ready scoring layer is being prepared for partner access.
+
+See: [`docs/HACKATHON_UPDATE_2026-06-03.md`](docs/HACKATHON_UPDATE_2026-06-03.md)
+
+---
+
 ## Overview
 
 Syndicate Protocol is an AI-native fraud detection system built for **Solana and Avalanche C-Chain**. It monitors new token deployments in real time, runs multi-layer CIA + V5 + V6 intelligence analysis on each token, and classifies each as **DANGER**, **WARN**, or **GOOD** — before retail investors are exposed.
@@ -33,7 +47,7 @@ Unlike existing tools that rely on static metadata checks, Syndicate Protocol co
 | Live v3 | 22,000+ | Solana | PumpPortal + RugCheck + Creator Tracking |
 | Live v4 | 30,000+ | Solana | + CIA Intelligence Engine |
 | Live v5 | Growing | Solana | + Jito, Stylometry, CEX Sweep |
-| Live v6 | Growing | Solana | + Backdoor, Concentration, Velocity |
+| Live v6 | 12,707+ | Solana | + Backdoor, Concentration, Velocity |
 | Academic | 116,304 | Solana | SolRPDS 2021–2024 |
 | Avax Historical | 2,238 | Avalanche | SnowTrace + Avax RPC |
 | Avax Real-time | Growing | Avalanche | Avax RPC polling |
@@ -171,8 +185,9 @@ syndicate_core/
 - [x] V6: Contract backdoor, holder concentration, rug velocity, serial rugger DB
 - [x] 230K+ record dataset milestone
 - [x] Telegram alerts ([@RugBusterAlerts](https://t.me/RugBusterAlerts))
+- [x] Portfolio scan — wallet connect + risk scoring
+- [x] Live Solana V6 collector persisted to PostgreSQL
 - [ ] REST API for real-time scoring
-- [ ] Portfolio scan — wallet connect + risk scoring (rugbuster.io)
 - [ ] Token Extensions vulnerability detection
 - [ ] Evaluation harness (F1 score vs RugCheck baseline)
 - [ ] V2 fine-tuning run (target: 500K+ records)
