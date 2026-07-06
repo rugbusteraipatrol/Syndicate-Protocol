@@ -468,6 +468,10 @@
 const SOLANA_RPC   = "https://api.mainnet-beta.solana.com";
 const RUGCHECK_API = "https://api.rugcheck.xyz/v1";
 const SCAN_CONCURRENCY = 3;   // koliko tokena se skenira paralelno
+const TOKEN_PROGRAMS = [
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // SPL Token
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"  // Token-2022
+];
 
 // ─── State ────────────────────────────────────────────────────────────────
 let walletPubkey = null;
@@ -511,49 +515,103 @@ async function connectWallet() {
 
 // ─── Fetch SPL Token Accounts ─────────────────────────────────────────────
 async function getTokenAccounts(pubkey) {
-  const payload = {
-    jsonrpc: "2.0", id: 1,
-    method: "getTokenAccountsByOwner",
-    params: [
-      pubkey,
-      { programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-      { encoding: "jsonParsed", commitment: "confirmed" }
-    ]
-  };
+  const requests = TOKEN_PROGRAMS.map(async (programId) => {
+    const payload = {
+      jsonrpc: "2.0", id: programId,
+      method: "getTokenAccountsByOwner",
+      params: [
+        pubkey,
+        { programId },
+        { encoding: "jsonParsed", commitment: "confirmed" }
+      ]
+    };
 
-  const resp = await fetch(SOLANA_RPC, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    try {
+      const resp = await fetch(SOLANA_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await resp.json();
+      if (!data.result?.value) return [];
+
+      return data.result.value.map(acc => {
+        const info    = acc.account.data.parsed?.info;
+        const mint    = info?.mint;
+        const amount  = info?.tokenAmount?.uiAmountString || '0';
+        const decimals= info?.tokenAmount?.decimals || 0;
+        return { mint, amount, decimals, programId };
+      });
+    } catch (e) {
+      console.warn(`Token account fetch failed for ${programId}:`, e);
+      return [];
+    }
   });
 
-  const data = await resp.json();
-  if (!data.result?.value) return [];
+  const merged = (await Promise.all(requests)).flat();
+  const byMint = new Map();
 
-  return data.result.value
-    .map(acc => {
-      const info    = acc.account.data.parsed?.info;
-      const mint    = info?.mint;
-      const amount  = info?.tokenAmount?.uiAmountString || '0';
-      const decimals= info?.tokenAmount?.decimals || 0;
-      return { mint, amount, decimals };
-    })
-    .filter(t => t.mint && parseFloat(t.amount) > 0);
+  for (const token of merged) {
+    if (!token.mint || parseFloat(token.amount) <= 0) continue;
+
+    const existing = byMint.get(token.mint);
+    if (!existing) {
+      byMint.set(token.mint, token);
+      continue;
+    }
+
+    const total = parseFloat(existing.amount || '0') + parseFloat(token.amount || '0');
+    byMint.set(token.mint, {
+      ...existing,
+      amount: String(total),
+      programId: existing.programId === token.programId ? existing.programId : 'mixed'
+    });
+  }
+
+  return [...byMint.values()];
 }
 
 // ─── RugCheck Risk Score ───────────────────────────────────────────────────
+function extractTokenMeta(data) {
+  const meta = data?.tokenMeta || data?.token?.tokenMeta || data?.token?.metadata || data?.metadata || {};
+  const name = meta.name || data?.name || data?.token?.name || null;
+  const symbol = meta.symbol || data?.symbol || data?.token?.symbol || null;
+
+  return {
+    name: typeof name === 'string' && name.trim() ? name.trim() : null,
+    symbol: typeof symbol === 'string' && symbol.trim() ? symbol.trim() : null
+  };
+}
+
 async function getRiskScore(mint) {
   try {
-    const resp = await fetch(`${RUGCHECK_API}/tokens/${mint}/report/summary`, {
+    const resp = await fetch(`${RUGCHECK_API}/tokens/${mint}/report`, {
       headers: { 'Accept': 'application/json' }
     });
 
-    if (!resp.ok) return { label: 'WARN', score: null, flags: [] };
+    if (!resp.ok) {
+      let detail = `RugCheck HTTP ${resp.status}`;
+      try {
+        const errorData = await resp.json();
+        detail = errorData.error || errorData.message || detail;
+      } catch {}
+
+      return {
+        label: 'WARN',
+        score: null,
+        flags: [detail],
+        meta: { name: null, symbol: null }
+      };
+    }
 
     const data = await resp.json();
     const score = data.score ?? data.score_normalised ?? null;
     const risks = data.risks ?? [];
-    const flags = risks.map(r => r.name).filter(Boolean);
+    const flags = risks
+      .map(r => r.name || r.description || r.title)
+      .filter(Boolean);
+    const meta = extractTokenMeta(data);
 
     // Syndicate labeling logika (konzistentna s dataset_collector_v4)
     let label;
@@ -573,20 +631,15 @@ async function getRiskScore(mint) {
       if (label === 'GOOD') label = 'WARN';
     }
 
-    return { label, score, flags };
+    return { label, score, flags, meta };
   } catch (e) {
-    return { label: 'WARN', score: null, flags: ['API nedostupan'] };
+    return {
+      label: 'WARN',
+      score: null,
+      flags: ['API nedostupan'],
+      meta: { name: null, symbol: null }
+    };
   }
-}
-
-// ─── Fetch Token Name ─────────────────────────────────────────────────────
-async function getTokenMeta(mint) {
-  try {
-    const resp = await fetch(`${RUGCHECK_API}/tokens/${mint}/report/summary`);
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data.tokenMeta?.name || data.tokenMeta?.symbol || null;
-  } catch { return null; }
 }
 
 // ─── Render Token Row ─────────────────────────────────────────────────────
@@ -595,6 +648,7 @@ function renderRow(token, status = 'scanning', riskData = null) {
   if (!row) return;
 
   const nameEl   = row.querySelector('.token-name');
+  const iconEl   = row.querySelector('.token-icon');
   const badgeEl  = row.querySelector('.risk-badge');
   const scoreEl  = row.querySelector('.risk-score');
   const flagsEl  = row.querySelector('.token-flags');
@@ -605,10 +659,19 @@ function renderRow(token, status = 'scanning', riskData = null) {
     return;
   }
 
-  const { label, score, flags } = riskData;
+  const { label, score, flags, meta } = riskData;
+  const displayName = meta?.name || token.name || null;
+  const displaySymbol = meta?.symbol || token.symbol || null;
 
   // Ažuriraj klasu reda
   row.className = `token-row ${label}`;
+
+  if (displayName || displaySymbol) {
+    nameEl.textContent = displayName && displaySymbol
+      ? `${displayName} ($${displaySymbol})`
+      : (displayName || `$${displaySymbol}`);
+    iconEl.textContent = (displaySymbol || displayName || token.mint)[0].toUpperCase();
+  }
 
   // Badge
   badgeEl.className  = `risk-badge ${label}`;
